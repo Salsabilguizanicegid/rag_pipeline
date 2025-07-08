@@ -1,20 +1,17 @@
 import streamlit as st
-from rag_pipeline import read_pdf, chunk_text, embed_texts, get_faiss_index, search_and_respond
+from rag_pipeline import RAGPipeline
 
-PDF_PATH = r"C:\Users\salsabil.guizani\OneDrive - CEGID\Desktop\Salsabil AI-POD\guide_fiscal_entreprise.pdf"
+PDF_FOLDER = r"C:\Users\salsabil.guizani\OneDrive - CEGID\Desktop\Salsabil AI-POD\pdfs"
 INDEX_PATH = "faiss_index.idx"
 
 @st.cache_resource
-def prepare_rag_pipeline(pdf_path: str, index_path: str):
-    text = read_pdf(pdf_path)
-    if text is None:
-        return None, None, None
-    chunks = chunk_text(text)
-    vectors = embed_texts(chunks)
-    index = get_faiss_index(vectors, index_path)
-    return chunks, vectors, index
+def load_pipeline():
+    pipeline = RAGPipeline(pdf_folder=PDF_FOLDER, index_path=INDEX_PATH)
+    if not pipeline.prepare_pipeline():
+        return None
+    return pipeline
 
-chunks, vectors, index = prepare_rag_pipeline(PDF_PATH, INDEX_PATH)
+pipeline = load_pipeline()
 
 st.set_page_config(page_title="RAG AI Assistant", layout="wide")
 
@@ -49,32 +46,30 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("RAG Assistant")
-st.markdown("Posez vos questions à propos du guide fiscal chargé.")
+st.markdown("Posez vos questions à propos des documents PDF chargés.")
 
-if chunks is None:
-    st.error("Erreur : impossible de charger le document PDF.")
+if pipeline is None:
+    st.error("Échec du chargement des documents. Vérifie le dossier ou le contenu.")
     st.stop()
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
 with st.form("question_form", clear_on_submit=True):
-    user_input = st.text_input("Votre question :", placeholder="Ex: Quels sont les taux de TVA applicables ?")
+    user_input = st.text_input("Votre question :", placeholder="Ex: Quels sont les taux de TVA ?")
     submitted = st.form_submit_button("Envoyer")
 
 chat_container = st.container()
 with chat_container:
     st.markdown('<div class="chat-box">', unsafe_allow_html=True)
     for role, msg in st.session_state.chat_history:
-        if role == "user":
-            st.markdown(f'<div class="user-message">{msg}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="bot-message">{msg}</div>', unsafe_allow_html=True)
+        class_name = "user-message" if role == "user" else "bot-message"
+        st.markdown(f'<div class="{class_name}">{msg}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 if submitted and user_input:
     st.session_state.chat_history.append(("user", user_input))
     with st.spinner("L'assistant réfléchit..."):
-        answer = search_and_respond(user_input, chunks, index)
+        answer = pipeline.search_and_respond(user_input)
     st.session_state.chat_history.append(("bot", answer))
     st.rerun()
