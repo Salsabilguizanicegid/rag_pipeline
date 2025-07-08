@@ -30,9 +30,9 @@ index = faiss.IndexFlatL2(dimension)
 index.add(vectors)
 ```
 - **Why FAISS ?**
-    Extremely fast for similarity search
-    Maintained by Facebook AI Research
-    Ideal for local RAG applications
+- Extremely fast for similarity search
+- Maintained by Facebook AI Research
+- Ideal for local RAG applications
 
 ## 🔹 3. Local LLM (eg, LLaMA 3 via Ollama)
 
