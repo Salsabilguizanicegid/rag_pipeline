@@ -1,9 +1,5 @@
 # 🔍 RAG AI Assistant
 
-This project is a question-answering assistant based on PDF documents. It uses a **Retrieval-Augmented Generation (RAG)** approach to read documents, index them, and generate responses using a local LLM.
-
-# 🔍 RAG AI Assistant
-
 This project is a question-answering assistant based on PDF documents. It uses a **Retrieval-Augmented Generation (RAG)** approach to read documents, index them, and generate answers using a local LLM.
 
 ---
