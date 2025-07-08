@@ -1,4 +1,4 @@
-# 🧠 MODEL_INFO.md
+# 🧠 MODEL_INFO
 
 ## 📌 Purpose
 
@@ -21,8 +21,8 @@ vectors = embedding_model.encode(text_chunks)
 
 ## 🔹 2. FAISS (Facebook AI Similarity Search)
 
-Purpose: Quickly stores and searches text vectors to retrieve the most relevant chunks to a user query.
-Index type used: IndexFlatL2
+- **Purpose**: Quickly stores and searches text vectors to retrieve the most relevant chunks to a user query.
+- **Index type used**: IndexFlatL2
 
 ```python
 import faiss
