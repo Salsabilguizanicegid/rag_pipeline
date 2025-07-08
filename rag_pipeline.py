@@ -1,5 +1,5 @@
 import os
-import fitz  
+import fitz  # PyMuPDF
 import faiss
 import numpy as np
 import requests
@@ -17,21 +17,21 @@ class RAGPipeline:
 
     def read_pdfs(self):
         if not os.path.isdir(self.pdf_folder):
-            print("Dossier non trouvé.")
+            print("Folder not found.")
             return
 
         full_text = ""
         for filename in os.listdir(self.pdf_folder):
             if filename.lower().endswith(".pdf"):
                 file_path = os.path.join(self.pdf_folder, filename)
-                print(f"Lecture du fichier : {filename}")
+                print(f"Reading file: {filename}")
                 try:
                     doc = fitz.open(file_path)
                     for page in doc:
                         full_text += page.get_text()
                     doc.close()
                 except Exception as e:
-                    print(f"Erreur lors de la lecture de {filename} : {e}")
+                    print(f"Error while reading {filename}: {e}")
         self.text = full_text
 
     def chunk_text(self, max_words=200):
@@ -48,13 +48,13 @@ class RAGPipeline:
     def build_or_load_index(self):
         if os.path.isfile(self.index_path):
             self.index = faiss.read_index(self.index_path)
-            print(f"Index FAISS chargé depuis {self.index_path}")
+            print(f"FAISS index loaded from {self.index_path}")
         else:
             dim = self.vectors.shape[1]
             self.index = faiss.IndexFlatL2(dim)
             self.index.add(self.vectors)
             faiss.write_index(self.index, self.index_path)
-            print(f"Index FAISS créé et sauvegardé dans {self.index_path}")
+            print(f"FAISS index created and saved to {self.index_path}")
 
     def search_and_respond(self, query: str, model_name="llama3"):
         query_vector = self.embedding_model.encode([query]).astype("float32")
@@ -63,13 +63,13 @@ class RAGPipeline:
         return self.query_llama_local(context, query, model_name)
 
     def query_llama_local(self, context: str, question: str, model_name="llama3"):
-        prompt = f"""Tu es un assistant expert. Réponds à la question uniquement à partir du contexte fourni.
+        prompt = f"""You are an expert assistant. Answer the question using only the context provided.
 
-Contexte :
+Context:
 {context}
 
-Question : {question}
-Réponse :
+Question: {question}
+Answer:
 """
         try:
             response = requests.post(
@@ -80,9 +80,9 @@ Réponse :
             data = response.json()
             return data.get("response", "").strip()
         except requests.exceptions.ReadTimeout:
-            return "Le modèle a mis trop de temps à répondre. Veuillez réessayer."
+            return "The model took too long to respond. Please try again."
         except requests.exceptions.RequestException as e:
-            return f"Erreur de requête : {e}"
+            return f"Request error: {e}"
 
     def prepare_pipeline(self):
         self.read_pdfs()

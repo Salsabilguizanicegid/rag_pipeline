@@ -46,18 +46,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("RAG Assistant")
-st.markdown("Posez vos questions à propos des documents PDF chargés.")
+st.markdown("Ask questions about the loaded PDF documents.")
 
 if pipeline is None:
-    st.error("Échec du chargement des documents. Vérifie le dossier ou le contenu.")
+    st.error("Failed to load documents. Please check the folder or file contents.")
     st.stop()
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
 with st.form("question_form", clear_on_submit=True):
-    user_input = st.text_input("Votre question :", placeholder="Ex: Quels sont les taux de TVA ?")
-    submitted = st.form_submit_button("Envoyer")
+    user_input = st.text_input("Your question:", placeholder="e.g. What are the VAT rates?")
+    submitted = st.form_submit_button("Send")
 
 chat_container = st.container()
 with chat_container:
@@ -69,7 +69,7 @@ with chat_container:
 
 if submitted and user_input:
     st.session_state.chat_history.append(("user", user_input))
-    with st.spinner("L'assistant réfléchit..."):
+    with st.spinner("The assistant is thinking..."):
         answer = pipeline.search_and_respond(user_input)
     st.session_state.chat_history.append(("bot", answer))
     st.rerun()

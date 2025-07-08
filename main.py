@@ -6,18 +6,18 @@ if __name__ == "__main__":
 
     pipeline = RAGPipeline(pdf_folder, index_path)
     if not pipeline.prepare_pipeline():
-        print("Erreur : impossible de charger les documents PDF.")
+        print("Error: unable to load PDF documents.")
         exit()
 
     while True:
-        question = input("Pose ta question (ou 'exit' pour quitter) >> ").strip()
+        question = input("Ask your question (or type 'exit' to quit) >> ").strip()
         if question.lower() == "exit":
-            print("Fin du programme.")
+            print("Exiting the program.")
             break
         if not question:
-            print("Question vide, essaie encore.")
+            print("Empty question, please try again.")
             continue
 
         answer = pipeline.search_and_respond(question)
-        print("\nRéponse générée :\n")
-        print(answer or "Aucune réponse trouvée.")
+        print("\nGenerated Answer:\n")
+        print(answer or "No answer found.")

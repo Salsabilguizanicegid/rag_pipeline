@@ -1,17 +1,17 @@
 # 🧠 MODEL_INFO.md
 
-## 📌 Objectif
+## 📌 Purpose
 
-Ce fichier documente les modèles utilisés dans le projet **RAG AI Assistant**, leur rôle, leur fonctionnement et pourquoi ils ont été choisis.
+This file documents the models used in the **RAG AI Assistant** project, their roles, how they work, and why they were chosen.
 
 ---
 
 ## 🔹 1. Sentence Transformer
 
-- **Modèle utilisé** : `all-MiniLM-L6-v2`
-- **Bibliothèque** : [`sentence-transformers`](https://www.sbert.net/)
-- **Fonction** : Convertir chaque chunk de texte issu des PDF en vecteurs numériques pour permettre la recherche sémantique.
-- **Utilisation dans le code** :
+- **Model used**: `all-MiniLM-L6-v2`  
+- **Library**: [`sentence-transformers`]  
+- **Purpose**: Converts each chunk of text extracted from the PDFs into numeric vectors for semantic search.  
+- **Used in code**:
 
 ```python
 from sentence_transformers import SentenceTransformer
@@ -21,24 +21,24 @@ vectors = embedding_model.encode(text_chunks)
 
 ## 🔹 2. FAISS (Facebook AI Similarity Search)
 
-Rôle : Stocker et rechercher rapidement les vecteurs de texte pour retrouver les documents les plus proches d'une question.
-Type d'index utilisé : IndexFlatL2
+Purpose: Quickly stores and searches text vectors to retrieve the most relevant chunks to a user query.
+Index type used: IndexFlatL2
 
 ```python
 import faiss
 index = faiss.IndexFlatL2(dimension)
 index.add(vectors)
 ```
-- **Pourquoi FAISS ?**
-    Ultra rapide en recherche de similarité
-    Maintenu par Facebook AI Research
-    Parfait pour du RAG local
+- **Why FAISS ?**
+    Extremely fast for similarity search
+    Maintained by Facebook AI Research
+    Ideal for local RAG applications
 
-## 🔹 3. LLM Local (ex: LLaMA 3 via Ollama)
+## 🔹 3. Local LLM (eg, LLaMA 3 via Ollama)
 
-- **Modèle appelé** : llama3
-- **Serveur d'inférence** : API locale disponible à http://localhost:11434/api/generate (via Ollama)
-- **Méthode d'appel dans le code** :
+- **Model used:** : llama3
+- **Inference server** : Local API running at http://localhost:11434/api/generate (via Ollama)
+- **Used in code:** :
 
 ```python
 response = requests.post(
@@ -46,32 +46,27 @@ response = requests.post(
     json={"model": "llama3", "prompt": prompt, "stream": False}
 )
 ```
-- **Prompt utilisé** :
-    Tu es un assistant expert. Réponds à la question uniquement à partir du contexte fourni.
+- **Prompt used** :
+    You are an expert assistant. Answer the question using only the context provided.
 
-    Contexte :
+    Context:
     ...
 
-    Question : ...
-    Réponse :
+    Question: ...
+    Answer:
 
-- **Pourquoi ce choix ?**
-    Permet de travailler sans envoyer les données sur internet
-    Précis, fluide, personnalisable
-    Facilement remplaçable par d'autres modèles compatibles
-
-## 🧩 Interaction entre les modèles
-1. SentenceTransformer → encode les morceaux de texte
-2. FAISS → retrouve les chunks les plus proches d’une question
-3. LLM (LLaMA 3) → génère la réponse en se basant uniquement sur les chunks récupérés
+## 🧩 Model Interaction Workflow
+1. SentenceTransformer → Encodes text chunks into embeddings
+2. FAISS → Retrieves the most semantically similar chunks to a query
+3. LLM (LLaMA 3) → Generates an answer using only the retrieved chunks
 
 
-[PDFs] → [Texte] → [Chunks] → [Embeddings] → [FAISS_Index]
-                                                   ↓
-                                               [Question]
-                                                   ↓
-                                        [Top3_Chunks_similaires]
-                                                   ↓
-                                        [Prompt_envoyé_au_LLM]
-                                                   ↓
-                                              [Réponse_finale]
+[PDFs] → [Text] → [Chunks] → [Embeddings] → [FAISS Index]
+                                                  ↓
+                                              [User Question]
+                                                  ↓
+                                        [Top 3 Similar Chunks]
+                                                  ↓
+                                       [Prompt sent to the LLM]
+                                                  ↓
+                                             [Final Answer]
