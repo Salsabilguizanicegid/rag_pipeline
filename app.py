@@ -1,75 +1,109 @@
-import streamlit as st
+import customtkinter as ctk
+from datetime import datetime
 from rag_pipeline import RAGPipeline
 
 PDF_FOLDER = r"C:\Users\salsabil.guizani\OneDrive - CEGID\Desktop\Salsabil AI-POD\pdfs"
 INDEX_PATH = "faiss_index.idx"
+pipeline = RAGPipeline(pdf_folder=PDF_FOLDER, index_path=INDEX_PATH)
+if not pipeline.prepare_pipeline():
+    raise Exception("Error loading PDF documents.")
 
-@st.cache_resource
-def load_pipeline():
-    pipeline = RAGPipeline(pdf_folder=PDF_FOLDER, index_path=INDEX_PATH)
-    if not pipeline.prepare_pipeline():
-        return None
-    return pipeline
+ctk.set_appearance_mode("light")  
+ctk.set_default_color_theme("blue")  
 
-pipeline = load_pipeline()
+class ChatApp(ctk.CTk):
+    def __init__(self):
+        super().__init__()
 
-st.set_page_config(page_title="RAG AI Assistant", layout="wide")
+        self.title("RAG Assistant")
+        self.geometry("750x800")
+        self.configure(padx=20, pady=20)
+        self.resizable(False, False)
 
-st.markdown("""
-<style>
-.chat-box {
-    background-color: #f0f0f0;
-    padding: 10px;
-    border-radius: 8px;
-    max-height: 400px;
-    overflow-y: auto;
-    margin-bottom: 20px;
-}
-.user-message {
-    background-color: gray;
-    color: black;
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    text-align: right;
-}
-.bot-message {
-    background-color: #212529;
-    color: white;
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    text-align: left;
-    border-left: 4px solid #1f77b4;
-}
-</style>
-""", unsafe_allow_html=True)
+        self.title_label = ctk.CTkLabel(
+            self,
+            text="RAG Assistant",
+            font=ctk.CTkFont("Arial", 28, "bold"),
+            text_color="#1f6aa5"
+        )
+        self.title_label.pack(pady=(0, 20))
 
-st.title("RAG Assistant")
-st.markdown("Ask questions about the loaded PDF documents.")
+        self.chat_box = ctk.CTkTextbox(
+            self,
+            width=700,
+            height=580,
+            font=("Arial", 14),
+            wrap="word",
+            corner_radius=10,
+            border_width=2,
+            border_color="#dddddd"
+        )
+        self.chat_box.pack(pady=(0, 10))
+        self.chat_box.configure(state="disabled")
 
-if pipeline is None:
-    st.error("Failed to load documents. Please check the folder or file contents.")
-    st.stop()
+        self.entry_frame = ctk.CTkFrame(self, fg_color="#f2f2f2")
+        self.entry_frame.pack(fill="x", pady=10, padx=5)
 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+        self.user_input = ctk.CTkEntry(
+            self.entry_frame,
+            placeholder_text="Ask your question here...",
+            width=540,
+            height=40
+        )
+        self.user_input.pack(side="left", padx=10, pady=10)
 
-with st.form("question_form", clear_on_submit=True):
-    user_input = st.text_input("Your question:", placeholder="e.g. What are the VAT rates?")
-    submitted = st.form_submit_button("Send")
+        self.send_button = ctk.CTkButton(
+            self.entry_frame,
+            text="Send",
+            command=self.send_message,
+            width=100,
+            height=40
+        )
+        self.send_button.pack(side="right", padx=10)
 
-chat_container = st.container()
-with chat_container:
-    st.markdown('<div class="chat-box">', unsafe_allow_html=True)
-    for role, msg in st.session_state.chat_history:
-        class_name = "user-message" if role == "user" else "bot-message"
-        st.markdown(f'<div class="{class_name}">{msg}</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        self.bind("<Return>", lambda event: self.send_message())
 
-if submitted and user_input:
-    st.session_state.chat_history.append(("user", user_input))
-    with st.spinner("The assistant is thinking..."):
-        answer = pipeline.search_and_respond(user_input)
-    st.session_state.chat_history.append(("bot", answer))
-    st.rerun()
+    def send_message(self):
+        user_message = self.user_input.get().strip()
+        if not user_message:
+            return
+
+        self.display_message("👤 You", user_message, is_user=True)
+
+        self.chat_box.configure(state="normal")
+        self.chat_box.insert("end", "\n🤖 Assistant is thinking...\n", "bot")
+        self.chat_box.configure(state="disabled")
+        self.chat_box.see("end")
+        self.update_idletasks()
+
+        bot_response = self.get_bot_response(user_message)
+        self.display_message("🤖 Assistant", bot_response, is_user=False)
+
+        self.user_input.delete(0, 'end')
+
+    def display_message(self, sender, message, is_user=False):
+        timestamp = datetime.now().strftime("%H:%M")
+        formatted = f"\n[{timestamp}] {sender}:\n{message}\n"
+
+        self.chat_box.configure(state="normal")
+
+        if is_user:
+            self.chat_box.insert("end", formatted, "user")
+        else:
+            self.chat_box.insert("end", formatted, "bot")
+
+        self.chat_box.tag_config("user", foreground="#000000", background="#e0e0e0", spacing3=5)
+        self.chat_box.tag_config("bot", foreground="#ffffff", background="#1f6aa5", spacing3=5)
+
+        self.chat_box.configure(state="disabled")
+        self.chat_box.see("end")
+
+    def get_bot_response(self, message):
+        try:
+            return pipeline.search_and_respond(message)
+        except Exception as e:
+            return f"An error occurred: {e}"
+
+if __name__ == "__main__":
+    app = ChatApp()
+    app.mainloop()

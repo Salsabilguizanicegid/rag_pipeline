@@ -4,6 +4,8 @@ import faiss
 import numpy as np
 import requests
 from sentence_transformers import SentenceTransformer
+from deep_translator import GoogleTranslator
+import langdetect 
 
 class RAGPipeline:
     def __init__(self, pdf_folder: str, index_path: str):
@@ -57,11 +59,23 @@ class RAGPipeline:
             print(f"FAISS index created and saved to {self.index_path}")
 
     def search_and_respond(self, query: str, model_name="llama3"):
-        query_vector = self.embedding_model.encode([query]).astype("float32")
+        try:
+            query_lang = langdetect.detect(query)
+        except:
+            query_lang = "en"  # default fallback
+        # Translate the query to English for semantic search (optional, or choose 'fr' if your docs are in French)
+        translated_query = GoogleTranslator(source='auto', target='en').translate(query)
+        # Embed and search with translated query
+        query_vector = self.embedding_model.encode([translated_query]).astype("float32")
         D, I = self.index.search(query_vector, k=3)
+        # Extract relevant chunks
         context = "\n\n".join(self.chunks[i] for i in I[0] if i < len(self.chunks))
-        return self.query_llama_local(context, query, model_name)
-
+        # Ask the model
+        raw_response = self.query_llama_local(context, translated_query, model_name)
+        # Translate the response back to the original language
+        final_response = GoogleTranslator(source='en', target=query_lang).translate(raw_response)
+        return final_response
+    
     def query_llama_local(self, context: str, question: str, model_name="llama3"):
         prompt = f"""You are an expert assistant. Answer the question using only the context provided.
 
