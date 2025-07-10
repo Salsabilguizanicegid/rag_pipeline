@@ -62,17 +62,12 @@ class RAGPipeline:
         try:
             query_lang = langdetect.detect(query)
         except:
-            query_lang = "en"  # default fallback
-        # Translate the query to English for semantic search (optional, or choose 'fr' if your docs are in French)
+            query_lang = "en"  
         translated_query = GoogleTranslator(source='auto', target='en').translate(query)
-        # Embed and search with translated query
         query_vector = self.embedding_model.encode([translated_query]).astype("float32")
         D, I = self.index.search(query_vector, k=3)
-        # Extract relevant chunks
         context = "\n\n".join(self.chunks[i] for i in I[0] if i < len(self.chunks))
-        # Ask the model
         raw_response = self.query_llama_local(context, translated_query, model_name)
-        # Translate the response back to the original language
         final_response = GoogleTranslator(source='en', target=query_lang).translate(raw_response)
         return final_response
     
